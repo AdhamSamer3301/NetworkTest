@@ -30,14 +30,11 @@ class ViewController: UIViewController {
   func bindUI() {
     viewModel = HomeViewModel()
     viewModel.getRecipes()
-    viewModel.recipesPublisher?.sink(receiveValue: { isPublished in
-      if isPublished == true {
-        print("Recipes are published")
-        DispatchQueue.main.async {
-          self.myTableView.reloadData()
-        }
+    viewModel.bindDataToVC = {
+      DispatchQueue.main.async {
+        self.myTableView.reloadData()
       }
-    }).store(in: &cancellables)
+    }
   }
 
 }

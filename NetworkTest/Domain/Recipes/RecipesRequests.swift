@@ -7,12 +7,26 @@
 
 import Foundation
 protocol RecipeRequestsProtocol {
-  func getRecipes() async throws -> [RecipeDTO]?
+  func getRecipes()
+  var recipes: [RecipeDTO]? { get }
+  var bindData: (() -> Void)? { get set }
 }
 
 class RecipeRequests: RecipeRequestsProtocol {
-  func getRecipes() async throws -> [RecipeDTO]? {
-    try await NetworkService.fetch(url: RecipesAPI.allRecipes.baseURL)
+  var recipes: [RecipeDTO]? = [] {
+    didSet {
+      bindData?()
+    }
   }
-  
+  var bindData: (() -> Void)? = {}
+  func getRecipes() {
+    NetworkService.fetch(url: RecipesAPI.allRecipes.baseURL) { (result: Result<[RecipeDTO], Error>) in
+      switch result {
+        case .success(let success):
+          self.recipes = success
+        case .failure(let failure):
+          print(failure.localizedDescription)
+      }
+    }
+  }
 }

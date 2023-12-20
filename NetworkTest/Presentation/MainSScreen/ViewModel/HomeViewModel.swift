@@ -13,6 +13,7 @@ protocol HomeViewModelProtocol {
   func getRecipes()
   var recipesCount: Int { get }
   func getRecipeBy(id: Int) -> Recipe?
+  var bindDataToVC: (() -> Void)? { get set}
 }
 class HomeViewModel  {
   
@@ -20,15 +21,18 @@ class HomeViewModel  {
   var recipesPublisher: AnyPublisher<Bool?, Never>? {
     $isPublished.eraseToAnyPublisher()
   }
-  
-  var recipes: [Recipe] = []
+  var bindDataToVC: (() -> Void)? = {}
+  var recipes: [Recipe] = [] {
+    didSet {
+      bindDataToVC?()
+    }
+  }
   var recipesRepo: RecipesRepositoryProtocol = RecipesRepository()
   
 }
 
 // MARK: - HomeViewModelProtocol
 extension HomeViewModel: HomeViewModelProtocol {
-  
   func getRecipeBy(id: Int) -> Recipe? {
     guard recipes.indices.contains(id) else { return nil }
     return recipes[id]
@@ -40,14 +44,10 @@ extension HomeViewModel: HomeViewModelProtocol {
   }
   
   func getRecipes() {
-    Task {
-      do {
-        recipes = try await recipesRepo.getRecipes()
-        print(recipes)
-        isPublished = true
-      } catch {
-        print("Error in fetching")
-      }
+    recipesRepo.getRecipes()
+    recipesRepo.bindData = { [weak self] in
+      self?.recipes = self?.recipesRepo.mapped ?? []
+      print(self?.recipes.count)
     }
   }
 }

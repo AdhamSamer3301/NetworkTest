@@ -8,16 +8,26 @@
 import Foundation
 
 protocol RecipesRepositoryProtocol {
-  func getRecipes() async throws -> [Recipe]
+  func getRecipes()
+  var mapped:[Recipe] { get }
+  var bindData: (() -> Void)? { get set }
 }
 
 class RecipesRepository: RecipesRepositoryProtocol {
-  let recipeRequest: RecipeRequestsProtocol = RecipeRequests()
+  var bindData: (() -> Void)? = {}
+  var recipeRequest: RecipeRequestsProtocol = RecipeRequests()
   let recipeMapper = RecipesMapper()
-  
-  func getRecipes() async throws -> [Recipe] {
-    guard let data = try await recipeRequest.getRecipes() else { fatalError("Can't get data") }
-    return recipeMapper.mapDTO(recipeDTO: data)
+  var mapped:[Recipe] = [] {
+    didSet {
+      bindData?()
+    }
+  }
+  func getRecipes() {
+    recipeRequest.getRecipes()
+    recipeRequest.bindData = { [weak self] in
+      self?.mapped = self?.recipeMapper.mapDTO(recipeDTO: self?.recipeRequest.recipes ?? []) ?? []
+      print("Mapped: \(String(describing: self?.mapped.count))")
+    }
   }
   
 }
